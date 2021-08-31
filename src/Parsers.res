@@ -13,9 +13,11 @@ type parserSuccess<'a> = {
 
 /**
  * Contains the result of a parsing operation.
+ * PSuccess(position, data) - the data 'a and the next position in the input
+ * PError(reason) - reason for failure
  */
 type result<'a> =
-| PSuccess('a)
+| PSuccess(int, 'a)
 | PError(string)
 
 
@@ -31,14 +33,17 @@ type parser<'a> = Parser((string, int) => result<'a>)
  * @param parser: parser - The parser to run
  * @param input: string - The string to parse
  * @param start: int - The position from where to parse. Must be >= 0
- * @throws IllegalArgument - If start is not >= 0
+ * @throws IllegalArgument - If start is less than 0
  */
 let runP = (parser, input, start) => {
     if start < 0 {
         raise(IllegalArgument("Tried to parse from negative position."))
+    } else if (start > String.length(input)) {
+        PError("EOF")
+    } else {
+        let Parser(p) = parser
+        p(input, start)
     }
-    let Parser(p) = parser
-    p(input, start)
 }
 
 
@@ -52,8 +57,18 @@ let parseCharacter = (character) => {
     if Js.String.length(character) != 1 {
         raise(IllegalArgument("The parameter character is not a string of length 1."))
     }
-    Parser((_, _) => {
-        PError("stub")
+    // Precondition: start is a valid position
+    Parser((input, start) => {
+        let c = Js.String.charAt(start, input)
+        if c == character {
+            PSuccess(start + 1, {
+                data: c,
+                startPos: start,
+                endPos: start + 1,
+            })
+        } else {
+            PError(`Expected character ${character}, found ${c}`)
+        }
     })
 }
 
