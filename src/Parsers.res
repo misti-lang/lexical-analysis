@@ -72,3 +72,34 @@ let parseCharacter = (character) => {
     })
 }
 
+
+/**
+ * Parses a string
+ * @param str: string - The string to parse, of length > 0
+ * @returns The corresponding parser
+ * @throws IllegalArgument - If str has a length of 0
+ */
+let parseString = (str) => {
+    let strLength = Js.String.length(str)
+    if strLength == 0 {
+        raise(IllegalArgument("The string to parse is empty."))
+    }
+    Parser((input, start) => {
+        let remainingInput = Js.String.length(input) - start
+        if (remainingInput < strLength) {
+            PError(`Expected string "${str}", not enough input found`)
+        } else {
+            // Precondition: start and (start + strLength) are valid positions
+            let testStr = Js.String.substring(~from = start, ~to_ = start + strLength, input)
+            if testStr == str {
+                PSuccess(start + strLength, {
+                    data: testStr,
+                    startPos: start,
+                    endPos: start + strLength
+                })
+            } else {
+                PError(`Expected string "${str}", found "${testStr}"`)
+            }
+        }
+    })
+}

@@ -110,3 +110,55 @@ describe("Test parseCharacter", () => {
         expect(result) |> toBe(`テ`)
     })
 })
+
+describe("Test parseString", () => {
+    open Expect
+    open Parsers
+
+    test("throws with an empty string", () => {
+        expect(() => parseString("")) |> toThrow
+    })
+
+    test("returns PError when run with an empty string", () => {
+        let p = parseString("a")
+        let isError = 
+            switch runP(p, "", 0) {
+            | PSuccess(_) => false
+            | PError(_) => true
+            }
+
+        expect(isError) |> toBe(true)
+    })
+
+    test("returns PError when the length of the string to parse is less than the remaining input", () => {
+        let p = parseString("hello")
+        let errorMessage = 
+            switch runP(p, "hell", 0) {
+            | PSuccess(_) => ""
+            | PError(reason) => reason
+            }
+
+        expect(errorMessage) |> toBe("Expected string \"hello\", not enough input found")
+    })
+
+    test("returns PError when doesn't find the required string", () => {
+        let p = parseString("a")
+        let errorMessage = 
+            switch runP(p, "b", 0) {
+            | PSuccess(_) => ""
+            | PError(reason) => reason
+            }
+
+        expect(errorMessage) |> toBe(`Expected string "a", found "b"`)
+    })
+
+    test("parses a string", () => {
+        let p = parseString("hello")
+        let result =
+            switch runP(p, "hello world", 0) {
+            | PSuccess(_, data) => data.data
+            | PError(reason) => reason
+            }
+        expect(result) |> toBe("hello")
+    })
+})
