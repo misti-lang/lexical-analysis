@@ -4,3 +4,7 @@
 .bsb.lock
 .merlin
 *.bs.js
+.vscode
+_esy
+doc
+esy.lock

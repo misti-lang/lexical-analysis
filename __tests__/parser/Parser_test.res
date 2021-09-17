@@ -1,25 +1,25 @@
 open Jest
 
-describe("Test runP", () => {
+describe("Test pRun", () => {
     open Expect
     open Parsers
     let mockParser = Parser((_, _) => PError("mock"))
 
     test("throws with a negative start position", () => {
-        expect(() => runP(mockParser, "", -1)) |> toThrow
+        expect(() => pRun(mockParser, "", -1)) |> toThrow
     })
 
     test("doesn't throw with a zero position", () => {
-        expect(() => runP(mockParser, "", 0)) |> not_ |> toThrow
+        expect(() => pRun(mockParser, "", 0)) |> not_ |> toThrow
     })
 
     test("doesn't throw with a positive position", () => {
-        expect(() => runP(mockParser, "", 1)) |> not_ |> toThrow
+        expect(() => pRun(mockParser, "", 1)) |> not_ |> toThrow
     })
 
     test("returns an error \"EOF\" when position > input length", () => {
         let reason =
-            switch runP(mockParser, "", 1) {
+            switch pRun(mockParser, "", 1) {
             | PSuccess(_) => ""
             | PError(reason) => reason
             }
@@ -27,30 +27,30 @@ describe("Test runP", () => {
     })
 })
 
-describe("Test parseCharacter", () => {
+describe("Test pChar", () => {
     open Expect
     open Parsers
 
     test("throws with an empty string", () => {
-        expect(() => parseCharacter("")) |> toThrow
+        expect(() => pChar("")) |> toThrow
     })
 
     test("throws with a string with more than 1 character", () => {
-        expect(() => parseCharacter("ab")) |> toThrow
+        expect(() => pChar("ab")) |> toThrow
     })
 
     test("doesn't throw with an extended ascii char", () => {
-        expect(() => parseCharacter(`á`)) |> not_ |> toThrow
+        expect(() => pChar(`á`)) |> not_ |> toThrow
     })
 
     test("doesn't throw with an unicode char", () => {
-        expect(() => parseCharacter(`ト`)) |> not_ |> toThrow
+        expect(() => pChar(`ト`)) |> not_ |> toThrow
     })
 
     test("returns PError when run with empty input", () => {
-        let p = parseCharacter("a")
+        let p = pChar("a")
         let isError = 
-            switch runP(p, "", 0) {
+            switch pRun(p, "", 0) {
             | PSuccess(_) => false
             | PError(_) => true
             }
@@ -59,9 +59,9 @@ describe("Test parseCharacter", () => {
     })
 
     test("returns PError when doesn't find the required char", () => {
-        let p = parseCharacter("a")
+        let p = pChar("a")
         let isError = 
-            switch runP(p, "b", 0) {
+            switch pRun(p, "b", 0) {
             | PSuccess(_) => false
             | PError(_) => true
             }
@@ -70,9 +70,9 @@ describe("Test parseCharacter", () => {
     })
 
     test("returns PError with a message when doesn't find the required char", () => {
-        let p = parseCharacter("a")
+        let p = pChar("a")
         let reason = 
-            switch runP(p, "b", 0) {
+            switch pRun(p, "b", 0) {
             | PSuccess(_) => ""
             | PError(reason) => reason
             }
@@ -81,9 +81,9 @@ describe("Test parseCharacter", () => {
     })
 
     test("parses an ascii char", () => {
-        let p = parseCharacter("a")
+        let p = pChar("a")
         let result =
-            switch runP(p, "a", 0) {
+            switch pRun(p, "a", 0) {
             | PSuccess(_, data) => data.data
             | PError(reason) => reason
             }
@@ -91,9 +91,9 @@ describe("Test parseCharacter", () => {
     })
 
     test("parses an extended ascii char", () => {
-        let p = parseCharacter(`á`)
+        let p = pChar(`á`)
         let result =
-            switch runP(p, `á`, 0) {
+            switch pRun(p, `á`, 0) {
             | PSuccess(_, data) => data.data
             | PError(reason) => reason
             }
@@ -101,9 +101,9 @@ describe("Test parseCharacter", () => {
     })
 
     test("parses an unicode char", () => {
-        let p = parseCharacter(`テ`)
+        let p = pChar(`テ`)
         let result =
-            switch runP(p, `テ`, 0) {
+            switch pRun(p, `テ`, 0) {
             | PSuccess(_, data) => data.data
             | PError(reason) => reason
             }
@@ -111,18 +111,18 @@ describe("Test parseCharacter", () => {
     })
 })
 
-describe("Test parseString", () => {
+describe("Test pStr", () => {
     open Expect
     open Parsers
 
     test("throws with an empty string", () => {
-        expect(() => parseString("")) |> toThrow
+        expect(() => pStr("")) |> toThrow
     })
 
     test("returns PError when run with an empty string", () => {
-        let p = parseString("a")
+        let p = pStr("a")
         let isError = 
-            switch runP(p, "", 0) {
+            switch pRun(p, "", 0) {
             | PSuccess(_) => false
             | PError(_) => true
             }
@@ -131,9 +131,9 @@ describe("Test parseString", () => {
     })
 
     test("returns PError when the length of the string to parse is less than the remaining input", () => {
-        let p = parseString("hello")
+        let p = pStr("hello")
         let errorMessage = 
-            switch runP(p, "hell", 0) {
+            switch pRun(p, "hell", 0) {
             | PSuccess(_) => ""
             | PError(reason) => reason
             }
@@ -142,9 +142,9 @@ describe("Test parseString", () => {
     })
 
     test("returns PError when doesn't find the required string", () => {
-        let p = parseString("a")
+        let p = pStr("a")
         let errorMessage = 
-            switch runP(p, "b", 0) {
+            switch pRun(p, "b", 0) {
             | PSuccess(_) => ""
             | PError(reason) => reason
             }
@@ -153,12 +153,35 @@ describe("Test parseString", () => {
     })
 
     test("parses a string", () => {
-        let p = parseString("hello")
+        let p = pStr("hello")
         let result =
-            switch runP(p, "hello world", 0) {
+            switch pRun(p, "hello world", 0) {
             | PSuccess(_, data) => data.data
             | PError(reason) => reason
             }
         expect(result) |> toBe("hello")
+    })
+
+    test("parses a string and returns the next position", () => {
+        let p = pStr("hello")
+        let result =
+            switch pRun(p, "hello world", 0) {
+            | PSuccess(pos, _) => pos
+            | PError(_) => -1
+            }
+        expect(result) |> toBe(5)
+    })
+})
+
+describe("Test pThen", () => {
+    open Expect
+    open Parsers
+
+    let p1 = pChar("x")
+    let p2 = pStr("ray")
+
+    test("fails if parser1 fails", () => {
+        let p = pThen(p1 , p2)
+        expect(true) |> toBe(false)
     })
 })
