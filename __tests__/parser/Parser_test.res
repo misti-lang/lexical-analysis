@@ -180,8 +180,63 @@ describe("Test pThen", () => {
     let p1 = pChar("x")
     let p2 = pStr("ray")
 
-    test("fails if parser1 fails", () => {
+    test("fails if parser1 fails and gives a reason", () => {
         let p = pThen(p1 , p2)
-        expect(true) |> toBe(false)
+        let result =
+            switch pRun(p, "yray", 0) {
+            | PSuccess(_, _) => ""
+            | PError(reason) => reason
+            }
+        expect(result) |> toBe("Expected character x, found y")
+    })
+
+    test("fails if parser2 fails and gives a reason", () => {
+        let p = pThen(p1 , p2)
+        let result =
+            switch pRun(p, "xraz", 0) {
+            | PSuccess(_, _) => ""
+            | PError(reason) => reason
+            }
+        expect(result) |> toBe("Expected string \"ray\", found \"raz\"")
+    })
+
+    test("works for 2 char", () => {
+        let p = pThen(p1, p1)
+        let result =
+            switch pRun(p, "xx", 0) {
+            | PSuccess(_, result) => {
+                let (c1, c2) = result.data
+                c1 ++ c2
+            }
+            | PError(_) => ""
+            }
+        expect(result) |> toBe("xx")
+    })
+
+    test("works for 2 string", () => {
+        let p = pThen(p2, p2)
+        let result =
+            switch pRun(p, "rayray", 0) {
+            | PSuccess(_, result) => {
+                let (c1, c2) = result.data
+                c1 ++ c2
+            }
+            | PError(_) => ""
+            }
+        expect(result) |> toBe("rayray")
+    })
+
+    test("works for nested pThen", () => {
+        let pThen1 = pThen(p1, p1)
+        let p = pThen(pThen1, pThen1)
+        let result =
+            switch pRun(p, "xxxx", 0) {
+            | PSuccess(_, result) => {
+                let ((c1, c2), (c3, c4)) = result.data
+                c1 ++ c2 ++ c3 ++ c4
+            }
+            | PError(reason) => reason
+            }
+        expect(result) |> toBe("xxxx")
     })
 })

@@ -14,7 +14,7 @@ type 'a parserSuccess = {
    Contains the result of a parsing operation
 *)
 type 'a result =
-| PSuccess of int * 'a
+| PSuccess of int * 'a parserSuccess
 | PError of string
 
 (**
@@ -45,7 +45,7 @@ let pRun parser input start =
    @param character A string with length 1 to parse
    @raise IllegalArgument If character is not a string of length 1
 *)
-let pChar (character: Js.String.t) =
+let pChar character =
     if Js.String.length character <> 1 then
         raise (IllegalArgument "The parameter is not a string of length 1")
     else
@@ -91,7 +91,22 @@ let pStr str =
                     PError ("Expected string \"" ^ str ^ "\", found \"" ^ testStr ^ "\"")
         )
 
-
-let pThen _ _ =
-    Parser (fun _ _ -> PError "stub")
+(**
+   Parses p1 and then p2. If any fail, the whole parser fails.
+   @param p1 First parser
+   @param p2 Second parser
+*)
+let pThen p1 p2 =
+    Parser (fun input start ->
+        match pRun p1 input start with
+        | PError(reason) -> PError(reason)
+        | PSuccess(next, data1) ->
+            match pRun p2 input next with
+            | PError(reason) -> PError(reason)
+            | PSuccess(next, data2) -> PSuccess(next, {
+                data = (data1.data, data2.data);
+                startPos = start;
+                endPos = next;
+            })
+    )
 
